@@ -20,6 +20,8 @@ require "ldap_lib.pm";
 # TODO : Peut-etre que la connexion est mieux dans un script a part ?
 #
 # NOTE : soit i le num id
+# NOTE : il faut checker chaque entree de chaque ligne du coup suremenet qu'il faudra une 
+#        deuxieme boucle, je suis encore dans les schemas de la DB la
 # for i // db
 #  i.el = entree1
 #  for i // ldap
