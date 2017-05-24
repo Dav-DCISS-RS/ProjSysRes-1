@@ -16,6 +16,7 @@ require "ldap_lib.pm";
 # if connexion db not possible
 #  print message erreur : connexion impossible
 # endif
+# USE : connect_ldap()
 #
 # TODO : Peut-etre que la connexion est mieux dans un script a part ?
 #
