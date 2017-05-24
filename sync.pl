@@ -8,4 +8,26 @@ use DBI;
 use DBD::mysql;
 use warnings;
 use strict;
+# On ajoute la lib ldap fournie par JMA
+require "ldap_lib.pm";
 
+# PSEUDO-CODE
+# 
+# if connexion db not possible
+#  print message erreur : connexion impossible
+# endif
+#
+# TODO : Peut-etre que la connexion est mieux dans un script a part ?
+#
+# NOTE : soit i le num id
+# for i // db
+#  i.el = entree1
+#  for i // ldap
+#    i.el =  entree2
+#    if entree1 != entree2
+#     print entree2 remplacee par entree1
+#     entree2 = entree1
+#    endif
+#  endfor
+#  i++
+# endfor
