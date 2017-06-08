@@ -75,15 +75,24 @@ while ($row = $sth->fetchrow_hashref) {
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
 # Comparaison des deux listes d'utilisateurs (BDD et LDAP)
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
-# On stocke les différences dans une var
+# On stocke les différences (utilisateurs présents dans ldap uniquement) dans une var
 @dels = sort($lc->get_Ronly);
-# Seulement s'il y a des différences on exécute le code suivant
+# Seulement s'il y a utilisateurs on exécute le code suivant
 if (scalar(@dels) > 0) {
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
     # le supprimer dans la base LDAP (érire le code)
     $ldap->delete("uid=%s");
+  }
+}
+# On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
+@diff = sort($lc->get_Lonly);
+if (scalar(@diff) > 0) {
+  foreach my $u (@diff) {
+    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
+    printf("Création %s\n",$dn);
+    # Ecrire cde ldap pour add user
   }
 }
 
