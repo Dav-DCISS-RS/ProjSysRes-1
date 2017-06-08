@@ -1,4 +1,4 @@
-#!/perl/bin/perl
+#!/usr/bin/perl
 
 # use CGI qw(:all);
 # use DBI();
