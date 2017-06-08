@@ -52,29 +52,38 @@ my (@SIgroups,@LDAPgroups);
 my ($dn,%attrib);
 my $today = strftime "%Y%m%d%H%M%S", localtime;
 
-print "today : $today\n";
+# On peut utiliser la var today pour voir expiration de l'utilisateur
+print "Date du jour : $today\n";
 
 print "utilisateurs BD \n";
 # recuperation des utilisateurs de la BD si
+# On peut rajouter les queries dans le fichier config
+# Ici le get_users affiche les utilisateurs
 $query = $cfg->val('queries', 'get_users');
 print $query."\n" ; # if $options{'debug'};
+# Je suppose que le code ci-dessous effectue la requête ?
 $sth = $dbh->prepare($query);
 $res = $sth->execute;
 while ($row = $sth->fetchrow_hashref) {
    $user = $row->{identifiant};
+   # push c'est ajouter à une liste en php c'est sûrement pareil en Perl
    push(@SIusers,$row->{identifiant});
    printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom}, $row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
 }
 
 # recuperation de la liste des utilisateurs LDAP
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
+# Comparaison des deux listes d'utilisateurs (BDD et LDAP)
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
+# On stocke les différences dans une var
 @dels = sort($lc->get_Ronly);
+# Seulement s'il y a des différences on exécute le code suivant
 if (scalar(@dels) > 0) {
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
-    # le supprimer dans la base LDAP (Ã©crire le code)
+    # le supprimer dans la base LDAP (érire le code)
+    $ldap->delete("uid=%s");
   }
 }
 
@@ -128,3 +137,10 @@ sub date2shadow {
   chomp(my $timestamp = `date --date='$date' +%s`);
   return(ceil($timestamp/86400));
 }
+
+# sub suppr_usr {
+#  my $suppr = "DROP TABLE `users`";
+#  my $newusr = "CREATE TABLE `users` (   `username` varchar(60) NOT NULL default '',   `password` varchar(32) default NULL,   `fullname` varchar(50) NOT NULL default '',   `type` enum('A','D','U','R','H') default NULL,   `quarantine_report` tinyint(1) default '0',   `spamscore` tinyint(4) default '0',   `highspamscore` tinyint(4) default '0',   `noscan` tinyint(1) default '0',   `quarantine_rcpt` varchar(60) default NULL,   PRIMARY KEY  (`username`) ) ENGINE=MyISAM DEFAULT CHARSET=latin1;";
+#  $DBH->do($drop);
+#  $DBH->do($create);
+#}
