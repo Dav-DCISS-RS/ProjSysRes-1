@@ -84,6 +84,11 @@ if (scalar(@dels) > 0) {
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
     # le supprimer dans la base LDAP (érire le code)
     $ldap->delete("uid=%s");
+    printf ("Affichage de var dn : $dn");
+    printf("Affichage de var s : %s");
+    printf("-----------------------------");
+    $ldap->delete("uid=%s",%dn);
+    printf("Fin test");
   }
 }
 # On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
