@@ -87,14 +87,14 @@ if (scalar(@dels) > 0) {
     printf ("Affichage de var dn : $dn");
     printf("Affichage de var s : %s");
     printf("-----------------------------");
-    $ldap->delete("uid=%s",%dn);
+    $ldap->delete("uid=%s",$dn);
     printf("Fin test");
   }
 }
 # On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
-@diff = sort($lc->get_Lonly);
-if (scalar(@diff) > 0) {
-  foreach my $u (@diff) {
+@dels = sort($lc->get_Lonly);
+if (scalar(@dels) > 0) {
+  foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Création %s\n",$dn);
     # Ecrire cde ldap pour add user
