@@ -121,7 +121,7 @@ if (scalar(@adds) > 0) {
     }
 }
 print "\n";
-print ("utilisateurs dans ldap :\n");
+print ("utilisateurs dans ldap aprÃs traitement :\n");
 foreach my $i (@LDAPusers){
 	printf $i;
 	printf "\n";
