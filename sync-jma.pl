@@ -92,8 +92,8 @@ if (scalar(@dels) > 0) {
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
-    # le supprimer dans la base LDAP (érire le code)
-@LDAPusers = del_attr($ldap, $cfg->val('ldap','usersdn','@dels'));
+    # le supprimer dans la base LDAP
+    @LDAPusers = del_attr($ldap, $cfg->val('ldap','usersdn','@dels'));
 
 print "Utilisateurs après modif :\n";
 
@@ -110,15 +110,22 @@ foreach my $i (@LDAPusers){
   }
 }
 # On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
-@dels = sort($lc->get_Lonly);
-if (scalar(@dels) > 0) {
-  foreach my $u (@dels) {
+#add user
+@adds = sort($lc->get_Lonly);
+if (scalar(@adds) > 0) {
+  foreach my $u (@adds) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    printf("Création %s\n",$dn);
-    # Ecrire cde ldap pour add user
-  }
+    printf("Création %s\n", $dn); 
+    @LDAPusers = add_attr($ldap, $cfg->val('ldap','usersdn','@adds')); 
+   
+    }
 }
-
+print "\n";
+print ("utilisateurs dans ldap :\n");
+foreach my $i (@LDAPusers){
+	printf $i;
+	printf "\n";
+}
 
 $dbh->disconnect;
 $ldap->unbind;
