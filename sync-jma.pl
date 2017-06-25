@@ -99,8 +99,8 @@ if (scalar(@dels) > 0) {
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Création %s\n",$dn);
-    # Ecrire cde ldap pour add user
-  }
+    # Ecrire code ldap pour add user
+    @LDAPusers = add_user($ldap, $cfg->val('ldap','usersdn','@adds'));
 }
 
 
