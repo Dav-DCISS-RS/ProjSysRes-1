@@ -2,7 +2,6 @@
 #
 # Version 0.2 - 27/03/2017
 #
-use strict;
 use Config::IniFiles;
 use ldap_lib;
 use List::Compare;
