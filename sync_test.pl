@@ -8,6 +8,7 @@ use IO::File;
 use Digest::MD5 qw(md5);
 use MIME::Base64 qw(encode_base64);
 use Getopt::Long;
+use DBI();
 use Data::Dumper::Simple;
 
 GetOptions(\%options,
