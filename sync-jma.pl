@@ -37,7 +37,6 @@ my $cfg = Config::IniFiles->new( -file => $CFGFILE );
 
 # parametres generaux
 $config{'scope'}  = $cfg->val('global','scope');
-
 my %params;
 &init_config(\%params, $cfg);
 my $dbh  = connect_dbi($params{'db'});
