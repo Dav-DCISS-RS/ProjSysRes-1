@@ -95,11 +95,8 @@ $lc = List::Compare->new(\@SIusers, \@LDAPusers);
 
 @adds = sort($lc->get_Lonly);
 if (scalar(@adds) > 0) {
-print "Ceci s'affiche s'il y a des utilisateurs à créer";
-
-
-foreach my $u (@adds) {
-
+  print "Ceci s'affiche s'il y a des utilisateurs à créer";
+  foreach my $u (@adds) {
     print "$u\n";
 
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
@@ -120,6 +117,7 @@ foreach my $u (@adds) {
         ));
 
     printf("Ajout de %s\n",$dn); #if $options{'verbose'};
+  }
 
 }
 
@@ -146,8 +144,7 @@ foreach my $u (@mods) {
     $modif_type="";
 
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-
-   #scalar ?
+    #scalar ?
 
     my %info = read_entry(
         $ldap,
@@ -220,8 +217,7 @@ $lc = List::Compare->new(\@db_groups_name, \@ldap_groups_name);
 foreach my $g (@adds) {
 
    #scalar ?
-
-    add_posixgroup(
+   add_posixgroup(
         $ldap,
         $cfg->val('ldap','groupsdn'),
         (
