@@ -311,4 +311,3 @@ print "\n\n";
 
 # le supprimer dans la base LDAP (écrire le code)
 #    printf("Ajout de %s\n",$dn); #if $options{'verbose'};
-#
