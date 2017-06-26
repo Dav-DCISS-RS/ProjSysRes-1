@@ -117,6 +117,7 @@ if (scalar(@adds) > 0) {
   foreach my $u (@adds) {
     print "Ajout de : \n";
     print $u;
+    my $user;
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Création %s\n", $dn);
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
