@@ -36,7 +36,7 @@ my $CFGFILE = "sync.cfg";
 my $cfg = Config::IniFiles->new( -file => $CFGFILE );
 
 # parametres generaux
-$config{'scope'}           = $cfg->val('global','scope');
+$config{'scope'} = $cfg->val('global','scope');
 
 my %params;
 &init_config(\%params, $cfg);
@@ -55,11 +55,11 @@ my $today = strftime "%d"."/"."%m"."/"."%Y", localtime;
 # On peut utiliser la var today pour voir expiration de l'utilisateur
 print "Date du jour : $today\n";
 
-print "\n";
-print "Utilisateurs BD \n";
 # recuperation des utilisateurs de la BD si
 # On peut rajouter les queries dans le fichier config
 # Ici le get_users affiche les utilisateurs
+print "\n";
+print "Utilisateurs BD \n";
 $query = $cfg->val('queries', 'get_users');
 print "Requête SQL : \n";
 print $query."\n" ; # if $options{'debug'};
@@ -117,9 +117,26 @@ foreach my $i (@LDAPusers){
 if (scalar(@adds) > 0) {
   print "Ceci s'affiche s'il y a des utilisateurs à créer";
   foreach my $u (@adds) {
+    print "Ajout de : \n";
+    print $u;
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Création %s\n", $dn);
-    @LDAPusers = add_user($ldap, $cfg->val('ldap','usersdn','@adds'));
+    ldap_lib::add_user($ldap,$user->{login},$cfg->val('ldap','usersdn'),
+        (
+            'cn'=> $user->{firstname}." ".$user->{name},
+            'sn'=>$user->{name},
+            'givenName'=>$user->{firstname},
+            'mail'=>$user->{mail},
+            'uidNumber'=>$user->{user_id},
+            'gidNumber'=>$user->{group_id},
+            'homeDirectory'=>"/home/".$user->{login},
+            'loginShell'=>"/bin/bash",
+            'userPassword'=>gen_password($user->{password}),
+            'shadowExpire'=>date2shadow($user->{expire})
+
+        ));
+
+    printf("Ajout de %s\n",$dn); #if $options{'verbose'};
 
     }
 }
