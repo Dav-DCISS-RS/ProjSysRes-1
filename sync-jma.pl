@@ -191,7 +191,7 @@ sub date2shadow {
 
   my $date = shift;
 
-  chomp(my $timestamp = 'date --date='$date' +%s');
+  chomp(my $timestamp = `date --date='$date' +%s`);
   return(ceil($timestamp/86400));
 }
 
