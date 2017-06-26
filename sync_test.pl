@@ -147,10 +147,7 @@ foreach my $u (@mods) {
 
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
 
-    $user=db_lib::getUserByLogin($u);
-    if(!$user){
-        next;
-    }
+   #scalar ?
 
     my %info = read_entry(
         $ldap,
@@ -222,7 +219,7 @@ $lc = List::Compare->new(\@db_groups_name, \@ldap_groups_name);
 @adds = sort($lc->get_Lonly);
 foreach my $g (@adds) {
 
-    my $group_infos = db_lib::getGroupByName($g);
+   #scalar ?
 
     add_posixgroup(
         $ldap,
