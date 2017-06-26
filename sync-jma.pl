@@ -122,7 +122,7 @@ if (scalar(@adds) > 0) {
     printf("Création %s\n", $dn);
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
         (
-            'cn'=> $user->{firstname}." ".$user->{name},
+            'cn'=> $user->{firstname}."".$user->{name},
             'sn'=>$user->{name},
             'givenName'=>$user->{firstname},
             'mail'=>$user->{mail},
