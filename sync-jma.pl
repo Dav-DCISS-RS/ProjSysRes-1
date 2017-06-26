@@ -50,12 +50,13 @@ my (@adds,@mods,@dels);
 my (@SIusers,@LDAPusers);
 my (@SIgroups,@LDAPgroups);
 my ($dn,%attrib);
-my $today = strftime "%Y%m%d%H%M%S", localtime;
+my $today = strftime "%d"."/"."%m"."/"."%Y", localtime;
 
 # On peut utiliser la var today pour voir expiration de l'utilisateur
 print "Date du jour : $today\n";
 
-print "utilisateurs BD \n";
+print "\n";
+print "Utilisateurs BD \n";
 # recuperation des utilisateurs de la BD si
 # On peut rajouter les queries dans le fichier config
 # Ici le get_users affiche les utilisateurs
@@ -73,7 +74,16 @@ while ($row = $sth->fetchrow_hashref) {
 }
 
 # recuperation de la liste des utilisateurs LDAP
+print "\n";
+print "Utilisateurs LDAP \n";
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
+
+foreach my $i (@LDAPusers){
+	printf $i;
+	printf "\n";
+}
+
+
 # Comparaison des deux listes d'utilisateurs (BDD et LDAP)
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
 # On stocke les différences (utilisateurs présents dans ldap uniquement) dans une var
@@ -84,25 +94,41 @@ if (scalar(@dels) > 0) {
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
-    # le supprimer dans la base LDAP (érire le code)
-    $ldap->delete("uid=%s");
-    print("Affichage de var dn : $dn");
-    print("Affichage de var s : uid=%s");
-    $ldap->delete("uid=%s",$dn);
-    print("Fin test");
+    # le supprimer dans la base LDAP
+    @LDAPusers = del_entry($ldap, $cfg->val('ldap','usersdn','@dels'));
+
+print "Utilisateurs après modif :\n";
+
+foreach my $i (@LDAPusers){
+	printf $i;
+	printf "\n";
+}
+
+   # $ldap->delete("uid=%s");
+   # print("Affichage de var dn : $dn");
+   # print("Affichage de var s : uid=%s");
+   # $ldap->delete("uid=%s",$dn);
+   # print("Fin test");
   }
 }
 # On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
-@dels = sort($lc->get_Lonly);
-if (scalar(@dels) > 0) {
+#add user
+@adds = sort($lc->get_Lonly);
+if (scalar(@adds) > 0) {
   print "Ceci s'affiche s'il y a des utilisateurs à créer";
-  foreach my $u (@dels) {
+  foreach my $u (@adds) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    printf("Création %s\n",$dn);
-    # Ecrire code ldap pour add user
+    printf("Création %s\n", $dn);
     @LDAPusers = add_user($ldap, $cfg->val('ldap','usersdn','@adds'));
-}
 
+    }
+}
+print "\n";
+print ("utilisateurs dans ldap apr�s traitement :\n");
+foreach my $i (@LDAPusers){
+	printf $i;
+	printf "\n";
+}
 
 $dbh->disconnect;
 $ldap->unbind;
