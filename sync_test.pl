@@ -29,6 +29,34 @@ sub init_config {
   $$ref_config{'db'}{'password'}  = $cfg->val('db','password');
 }
 
+sub connect_dbi {
+  my %params = %{(shift)};
+
+  my $dsn = "DBI:mysql:database=".$params{'database'}.";host=".$params{'server'};
+  my $dbh = DBI->connect(
+			$dsn,
+                      	$params{'user'},
+		      	$params{'password'},
+		      	{'RaiseError' => 1}
+		      );
+  return($dbh);
+}
+
+sub gen_password {
+  my $clearPassword = shift;
+
+  my $hashPassword = "{MD5}" . encode_base64( md5($clearPassword),'' );
+  return($hashPassword);
+}
+
+sub date2shadow {
+
+  my $date = shift;
+
+  chomp(my $timestamp = `date --date='$date' +%s`);
+  return(ceil($timestamp/86400));
+}
+
 GetOptions(\%options,
            "verbose",
 	   "debug",
