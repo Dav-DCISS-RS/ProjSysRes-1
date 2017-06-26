@@ -94,7 +94,7 @@ if (scalar(@dels) > 0) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
     # le supprimer dans la base LDAP
-    @LDAPusers = del_entry($ldap, $cfg->val('ldap','usersdn','@dels'));
+    ldap_lib::del_entry($ldap,$dn);
 
 print "Utilisateurs après modif :\n";
 
