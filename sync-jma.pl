@@ -118,6 +118,7 @@ if (scalar(@adds) > 0) {
     print "Ajout de : \n";
     print $u;
     my $user;
+    no warnings; # Pour éviter les messages inssuportables de concatenation
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Création %s\n", $dn);
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
