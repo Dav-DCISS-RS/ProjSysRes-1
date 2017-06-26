@@ -11,6 +11,24 @@ use Getopt::Long;
 use DBI();
 use Data::Dumper::Simple;
 
+#-----------------------------------------------------------------------
+# fonctions
+#-----------------------------------------------------------------------
+sub init_config {
+  (my $ref_config, my $cfg) = @_;
+
+  $$ref_config{'ldap'}{'server'}  = $cfg->val('ldap','server');
+  $$ref_config{'ldap'}{'version'} = $cfg->val('ldap','version');
+  $$ref_config{'ldap'}{'port'}    = $cfg->val('ldap','port');
+  $$ref_config{'ldap'}{'binddn'}  = $cfg->val('ldap','binddn');
+  $$ref_config{'ldap'}{'passdn'}  = $cfg->val('ldap','passdn');
+
+  $$ref_config{'db'}{'database'}  = $cfg->val('db','database');
+  $$ref_config{'db'}{'server'}    = $cfg->val('db','server');
+  $$ref_config{'db'}{'user'}      = $cfg->val('db','user');
+  $$ref_config{'db'}{'password'}  = $cfg->val('db','password');
+}
+
 GetOptions(\%options,
            "verbose",
 	   "debug",
