@@ -2,7 +2,6 @@
 #
 # Version 0.2 - 27/03/2017
 #
-use diagnostics;
 use Config::IniFiles;
 use ldap_lib;
 use List::Compare;
@@ -122,7 +121,7 @@ if (scalar(@adds) > 0) {
     printf("Création %s\n", $dn);
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
         (
-            'cn'=> $user->{firstname}."".$user->{name},
+            'cn'=> $user->{firstname}.' '.$user->{name},
             'sn'=>$user->{name},
             'givenName'=>$user->{firstname},
             'mail'=>$user->{mail},
@@ -192,7 +191,7 @@ sub date2shadow {
 
   my $date = shift;
 
-  chomp(my $timestamp = `date --date='$date' +%s`);
+  chomp(my $timestamp = 'date --date='$date' +%s');
   return(ceil($timestamp/86400));
 }
 
