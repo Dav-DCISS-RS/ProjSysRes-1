@@ -123,16 +123,16 @@ if (scalar(@adds) > 0) {
     printf("Création %s\n", $dn);
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
         (
-            'cn'=> $user->{firstname}.' '.$user->{name},
-            'sn'=>$user->{name},
-            'givenName'=>$user->{firstname},
-            'mail'=>$user->{mail},
-            'uidNumber'=>$user->{user_id},
-            'gidNumber'=>$user->{group_id},
-            'homeDirectory'=>"/home/".$user->{login},
-            'loginShell'=>"/bin/bash",
-            'userPassword'=>gen_password($user->{password}),
-            'shadowExpire'=>date2shadow($user->{expire})
+        'cn'=> $user->{prenom}." ".$user->{nom},
+        'sn'=>$user->{nom},
+        'givenName'=>$user->{prenom},
+        'mail'=>$user->{courriel},
+        'uidNumber'=>$user->{id_utilisateur},
+        'gidNumber'=>$user->{id_groupe},
+        'homeDirectory'=>"/home/".$user->{identifiant},
+        'loginShell'=>"/bin/bash",
+        'userPassword'=>gen_password($user->{mot_passe}),
+        'shadowExpire'=>date2shadow($user->{date_expiration})
 
         ));
 

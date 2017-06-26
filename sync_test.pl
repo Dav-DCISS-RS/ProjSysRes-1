@@ -150,16 +150,16 @@ if (scalar(@adds) > 0) {
 
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
         (
-            'cn'=> $user->{firstname}." ".$user->{name},
-            'sn'=>$user->{name},
-            'givenName'=>$user->{firstname},
-            'mail'=>$user->{mail},
-            'uidNumber'=>$user->{user_id},
-            'gidNumber'=>$user->{group_id},
-            'homeDirectory'=>"/home/".$user->{login},
+            'cn'=> $user->{prenom}." ".$user->{nom},
+            'sn'=>$user->{nom},
+            'givenName'=>$user->{prenom},
+            'mail'=>$user->{courriel},
+            'uidNumber'=>$user->{id_utilisateur},
+            'gidNumber'=>$user->{id_groupe},
+            'homeDirectory'=>"/home/".$user->{identifiant},
             'loginShell'=>"/bin/bash",
-            'userPassword'=>gen_password($user->{password}),
-            'shadowExpire'=>date2shadow($user->{expire})
+            'userPassword'=>gen_password($user->{mot_passe}),
+            'shadowExpire'=>date2shadow($user->{date_expiration})
 
         ));
 
@@ -233,7 +233,7 @@ my (@db_groups_name,@ldap_groups_name);
 my (@db_group_users_login,@ldap_group_users_login);
 
 # recuperation des groupes de la BD
-my $db_groups = db_lib::getGroups();
+# my $db_groups = db_lib::getGroups();
 
 foreach my $data (@$db_groups) {
     push(@db_groups_name,$data->[1]);
