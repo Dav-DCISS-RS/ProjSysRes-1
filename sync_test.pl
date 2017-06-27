@@ -11,7 +11,7 @@ use Getopt::Long;
 use DBI();
 use Data::Dumper;
 # use strict;
-use warnings;
+# use warnings;
 
 #-----------------------------------------------------------------------
 # fonctions
