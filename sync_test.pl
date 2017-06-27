@@ -82,7 +82,24 @@ my $cfg = Config::IniFiles->new( -file => $CFGFILE );
 
 # parametres generaux
 $config{'scope'}  = $cfg->val('global','scope');
-my %ldap_config = ldap_lib::get_ldap_config();  
+my %params;
+&init_config(\%params, $cfg);
+my $dbh  = connect_dbi($params{'db'});
+my $ldap = connect_ldap($params{'ldap'});
+my %assoc =  (
+
+    'server' => $cfg->val('ldap','server'),
+    'version' => $cfg->val('ldap','version'),
+    'port' => $cfg->val('ldap','port'),
+    'binddn' => $cfg->val('ldap','binddn'),
+    'passdn' => $cfg->val('ldap','passdn'),
+    'basedn' => $cfg->val('ldap','basedn'),
+    'usersdn' => $cfg->val('ldap','usersdn'),
+    'groupsdn' => $cfg->val('ldap','groupsdn')
+
+
+);
+my %ldap_config = %assoc;
 $ldap = connect_ldap(%ldap_config);
 
 # Declaration variables globales

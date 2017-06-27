@@ -424,22 +424,4 @@ sub get_dn_list {
   return @list;
 }
 
-sub get_ldap_config {
-    my %assoc =  (
-
-        'server' => $cfg->val('ldap','server'),
-        'version' => $cfg->val('ldap','version'),
-        'port' => $cfg->val('ldap','port'),
-        'binddn' => $cfg->val('ldap','binddn'),
-        'passdn' => $cfg->val('ldap','passdn'),
-        'basedn' => $cfg->val('ldap','basedn'),
-        'usersdn' => $cfg->val('ldap','usersdn'),
-        'groupsdn' => $cfg->val('ldap','groupsdn')
-
-
-    );
-
-    return %assoc;
-
-}
 1;
