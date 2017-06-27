@@ -14,17 +14,17 @@ use strict;
 use warnings;
 
 #-----------------------------------------------------------------------
-# fonctions
+# FONCTIONS
 #-----------------------------------------------------------------------
 sub init_config {
   (my $ref_config, my $cfg) = @_;
-
+  # VALEURS LDAP
   $$ref_config{'ldap'}{'server'}  = $cfg->val('ldap','server');
   $$ref_config{'ldap'}{'version'} = $cfg->val('ldap','version');
   $$ref_config{'ldap'}{'port'}    = $cfg->val('ldap','port');
   $$ref_config{'ldap'}{'binddn'}  = $cfg->val('ldap','binddn');
   $$ref_config{'ldap'}{'passdn'}  = $cfg->val('ldap','passdn');
-
+  # VALEURS DB
   $$ref_config{'db'}{'database'}  = $cfg->val('db','database');
   $$ref_config{'db'}{'server'}    = $cfg->val('db','server');
   $$ref_config{'db'}{'user'}      = $cfg->val('db','user');
@@ -33,7 +33,6 @@ sub init_config {
 
 sub connect_dbi {
   my %params = %{(shift)};
-
   my $dsn = "DBI:mysql:database=".$params{'database'}.";host=".$params{'server'};
   my $dbh = DBI->connect(
 			$dsn,
@@ -46,15 +45,12 @@ sub connect_dbi {
 
 sub gen_password {
   my $clearPassword = shift;
-
-  my $hashPassword = "{MD5}" . encode_base64( md5($clearPassword),'' );
+  my $hashPassword = "{MD5}" . encode_base64(md5($clearPassword),'');
   return($hashPassword);
 }
 
 sub date2shadow {
-
   my $date = shift;
-
   chomp(my $timestamp = `date --date='$date' +%s`);
   return(ceil($timestamp/86400));
 }
@@ -86,7 +82,7 @@ my %params;
 &init_config(\%params, $cfg);
 my $dbh  = connect_dbi($params{'db'});
 my $ldap = connect_ldap($params{'ldap'});
-my %assoc =  (
+my %vals =  (
 
     'server' => $cfg->val('ldap','server'),
     'version' => $cfg->val('ldap','version'),
@@ -99,7 +95,7 @@ my %assoc =  (
 
 
 );
-my %ldap_config = %assoc;
+my %ldap_config = %vals;
 $ldap = connect_ldap(%ldap_config);
 
 # Declaration variables globales
@@ -140,30 +136,21 @@ while ($row = $sth->fetchrow_hashref) {
 print "\n";
 print "Utilisateurs LDAP \n";
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
-
 foreach my $i (@LDAPusers){
 	printf $i;
 	printf "\n";
 }
-
-
-print"\n########Synchronisation########\n";
-
-
+print"\nSynchronisation\n";
 $user="vide";
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
 
-
-# Users à ajouter dans l'annuaire LDAP
-
+# Utilisateurs à ajouter dans l'annuaire LDAP
 @adds = sort($lc->get_Lonly);
 if (scalar(@adds) > 0) {
   print "Ceci s'affiche s'il y a des utilisateurs à créer";
   foreach my $u (@adds) {
     print "$u\n";
-
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-
     ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
         (
             'cn'=> $user->{prenom}." ".$user->{nom},
@@ -185,53 +172,39 @@ if (scalar(@adds) > 0) {
 }
 
 
-# Utilisateurs à supprimer d'annuaire LDAP
-
+# Utilisateurs à supprimer de l'annuaire LDAP
 @dels = sort($lc->get_Ronly);
-
 foreach my $u (@dels) {
-
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-
     ldap_lib::del_entry($ldap,$dn);
-
     printf("Suppression de %s\n",$dn); #if $options{'verbose'};
 }
 
 
-# Modifications dans l'annuaire LDAP
-
+# Modif dans l'annuaire LDAP
 my $modif_type="";
 @mods = sort($lc->get_intersection);
 foreach my $u (@mods) {
     $modif_type="";
-
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    #scalar ?
-
     my %info = read_entry(
         $ldap,
         $cfg->val('ldap','usersdn'),
         "(uid=".$u.")",
         ('mail','shadowExpire','userPassword')
     );
-    #print gen_password($user->{password})."!=".$info{'userPassword'}."\n";
     if($user->{courriel} ne $info{'mail'}){
         modify_attr($ldap,$dn,'mail'=>$user->{courriel});
         $modif_type="mail";
     }
-
     if(date2shadow($user->{date_expiration}) != $info{'shadowExpire'}){
         modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{date_expiration}));
         $modif_type="expire";
     }
-
     if(gen_password($user->{mot_passe}) ne $info{'userPassword'}){
         modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{mot_passe}));
         $modif_type="password";
     }
-
-
     if($modif_type ne ""){
         printf("Modification de %s [".$modif_type."]\n",$dn); #if $options{'verbose'};
     }
@@ -241,49 +214,38 @@ print "\n\n";
 
 
 #################
-# GROUPES #
+# GROUPES
 #################
-
-
 my (@db_groups_name,@ldap_groups_name);
 my (@db_group_users_login,@ldap_group_users_login);
 
-# recuperation des groupes de la BD
-# my $db_groups = db_lib::getGroups();
+# Récupération des groupes de la BD
 my $sql = my $db->prepare('SELECT * FROM groups ORDER BY group_id');
 $sql->execute();
 my $db_groups = $sql->fetchall_arrayref;
-
 foreach my $data (@$db_groups) {
     push(@db_groups_name,$data->[1]);
 }
 
 
-# Récupération LDAP groups
+# Récupération groupes LDAP
 @ldap_groups_name = sort(get_posixgroups_list($ldap,$ldap_config{'groupsdn'}));
-
-print "#LDAP Groups#\n";
-foreach my $elt (@ldap_groups_name) {
-    print "-$elt-\n";
+print "Groupes LDAP\n";
+foreach my $i (@ldap_groups_name) {
+    print "-$i-\n";
 }
 
-print "#DB groups#\n";
-foreach my $elt (@db_groups_name) {
-    print "-$elt-\n";
+print "Groupes DB\n";
+foreach my $i (@db_groups_name) {
+    print "-$i-\n";
 }
-
-print"\n###Action###\n";
-
 
 $lc = List::Compare->new(\@db_groups_name, \@ldap_groups_name);
-
 
 # Groupes à ajouter dans la base LDAP
 @adds = sort($lc->get_Lonly);
 my $group_infos;
 foreach my $g (@adds) {
-
-   #scalar ?
    add_posixgroup(
         $ldap,
         $cfg->val('ldap','groupsdn'),
@@ -297,40 +259,36 @@ foreach my $g (@adds) {
     printf "Adding the group $g in LDAP base.";
 }
 
-# Groupes à retirer de la base LDAP
+# Groupes à supprimer de la base LDAP
 @dels = sort($lc->get_Ronly);
 foreach my $g (@dels) {
     $dn = sprintf("cn=%s,%s",$g,$cfg->val('ldap','groupsdn'));
     ldap_lib::del_entry($ldap,$dn);
-    printf "Deleting the group $g of LDAP base.\n";
+    printf "Suppression du groupe $g de LDAP\n";
 }
 
 
 
 # Ajout d'un membre dans groupe
-
 my @db_group_users;
 
 # Parcours de tous les groupes
 foreach my $data (@$db_groups) {
-
     @db_group_users_login = ();
     @ldap_group_users_login = ();
-
     # Récupération des utilisateurs du groupe en question
-    my $db_group_users = db_lib::getGroupUsers($data->[0]);
+    my($group_id) = @_;
+    my $sql = $db->prepare('SELECT u.* FROM group_members gm INNER JOIN groups g ON g.group_id=gm.group_id INNER JOIN users u ON gm.user_id = u.user_id  WHERE g.group_id=? ');
+    $sql->execute($group_id);
+    my $db_group_users = $sql->fetchall_arrayref;;
 
-    # On place dans un tableau les login des utilisateurs inscrits dans ce groupe (DB)
-    foreach my $elt (@$db_group_users) {
-        push(@db_group_users_login,$elt->[1]);
+    # On place dans un tableau les identifiants des utilisateurs inscrits dans le groupe
+    foreach my $i (@$db_group_users) {
+        push(@db_group_users_login,$i->[1]);
     }
 
-
-
-    # On récupère les login des utilisateurs de ce groupe (LDAP)
+    # On récupère les identifiants des utilisateurs du groupe LDAP
     @ldap_group_users_login=ldap_lib::get_posixgroup_members($ldap,$ldap_config{'groupsdn'},$data->[1]);
-
-
 
     $lc = List::Compare->new(\@db_group_users_login, \@ldap_group_users_login);
 
@@ -343,12 +301,10 @@ foreach my $data (@$db_groups) {
             $data->[1], # Nom groupe
             $u
         );
-        printf "Adding user $u in the group $data->[1] in LDAP base.\n";
+        printf "Ajout de l'utilisateur $u dans le groupe $data->[1] dans la base LDAP.\n";
     }
 
-
-
-    # On le supprime de LDAP
+    # On supprime de LDAP
     @dels = sort($lc->get_Ronly);
     foreach my $u (@dels) {
         $dn = sprintf("cn=%s,%s",$data->[1],$cfg->val('ldap','groupsdn'));
@@ -359,14 +315,7 @@ foreach my $data (@$db_groups) {
             ('memberUid'=>$u)
         );
 
-        printf "Deleting user $u of the group $data->[1] in LDAP base.\n";
+        printf "Suppression de l'utilisateur $u du groupe $data->[1] dans LDAP\n";
     }
-
-
-
 }
-
-
-
-
 print "\n\n";
