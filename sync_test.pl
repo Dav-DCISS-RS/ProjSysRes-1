@@ -246,6 +246,7 @@ foreach my $data (@$db_groups) {
 
 
 # Récupération LDAP groups
+my $ldap_config;
 @ldap_groups_name = sort(get_posixgroups_list($ldap,$ldap_config{'groupsdn'}));
 
 print "#LDAP Groups#\n";
