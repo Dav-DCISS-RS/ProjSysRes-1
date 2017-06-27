@@ -216,18 +216,18 @@ foreach my $u (@mods) {
         ('mail','shadowExpire','userPassword')
     );
     #print gen_password($user->{password})."!=".$info{'userPassword'}."\n";
-    if($user->{mail} ne $info{'mail'}){
-        modify_attr($ldap,$dn,'mail'=>$user->{mail});
+    if($user->{courriel} ne $info{'mail'}){
+        modify_attr($ldap,$dn,'mail'=>$user->{courriel});
         $modif_type="mail";
     }
 
-    if(date2shadow($user->{expire}) != $info{'shadowExpire'}){
-        modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{expire}));
+    if(date2shadow($user->{date_expiration}) != $info{'shadowExpire'}){
+        modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{date_expiration}));
         $modif_type="expire";
     }
 
-    if(gen_password($user->{password}) ne $info{'userPassword'}){
-        modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{password}));
+    if(gen_password($user->{mot_passe}) ne $info{'userPassword'}){
+        modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{mot_passe}));
         $modif_type="password";
     }
 
@@ -288,8 +288,8 @@ foreach my $g (@adds) {
         $ldap,
         $cfg->val('ldap','groupsdn'),
         (
-            'cn'=>$group_infos->{name},
-            'gidNumber'=>$group_infos->{group_id},
+            'cn'=>$group_infos->{nom},
+            'gidNumber'=>$group_infos->{id_groupe},
             'description'=>$group_infos->{description}
         )
     );
