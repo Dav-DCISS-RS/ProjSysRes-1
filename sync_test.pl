@@ -45,7 +45,6 @@ sub connect_dbi {
 }
 
 sub gen_password {
-  print Dumper \%params;
   my $clearPassword = shift;
 
   my $hashPassword = "{MD5}" . encode_base64( md5($clearPassword),'' );
