@@ -10,7 +10,7 @@ use MIME::Base64 qw(encode_base64);
 use Getopt::Long;
 use DBI();
 use Data::Dumper::Simple;
-use strict;
+# use strict;
 use warnings;
 
 #-----------------------------------------------------------------------
@@ -97,7 +97,7 @@ my %assoc =  (
     'usersdn' => $cfg->val('ldap','usersdn'),
     'groupsdn' => $cfg->val('ldap','groupsdn')
 
-    
+
 );
 my %ldap_config = %assoc;
 $ldap = connect_ldap(%ldap_config);
