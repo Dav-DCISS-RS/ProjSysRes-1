@@ -86,7 +86,8 @@ my %params;
 &init_config(\%params, $cfg);
 my $dbh  = connect_dbi($params{'db'});
 my $ldap = connect_ldap($params{'ldap'});
-
+my %ldap_config = getLDAPConfig();
+$ldap = connect_ldap(%ldap_config);
 
 # Declaration variables globales
 my ($query,$sth,$res,$row,$user,$groupname,%expire);
