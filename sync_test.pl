@@ -86,7 +86,20 @@ my %params;
 &init_config(\%params, $cfg);
 my $dbh  = connect_dbi($params{'db'});
 my $ldap = connect_ldap($params{'ldap'});
-my %ldap_config = getLDAPConfig();
+my %assoc =  (
+
+    'server' => $cfg->val('ldap','server'),
+    'version' => $cfg->val('ldap','version'),
+    'port' => $cfg->val('ldap','port'),
+    'binddn' => $cfg->val('ldap','binddn'),
+    'passdn' => $cfg->val('ldap','passdn'),
+    'basedn' => $cfg->val('ldap','basedn'),
+    'usersdn' => $cfg->val('ldap','usersdn'),
+    'groupsdn' => $cfg->val('ldap','groupsdn')
+
+    
+);
+my %ldap_config = %assoc;
 $ldap = connect_ldap(%ldap_config);
 
 # Declaration variables globales
