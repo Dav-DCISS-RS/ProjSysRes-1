@@ -18,9 +18,9 @@ use vars qw(%config %options);
              exist_entry
              read_entry
              read_array_entry
-             del_entry    
-             add_attr    
-             modify_attr    
+             del_entry
+             add_attr
+             modify_attr
              del_attr
              get_users_list
              get_group_members
@@ -43,14 +43,14 @@ use vars qw(%config %options);
 
 sub connect_ldap {
   my %params = %{(shift)};
-  
+
   my $ldap = Net::LDAP->new($params{'server'},
  		            port =>  $params{'port'},
                             version => $params{'version'},
                             timeout => 60)
   or die "erreur LDAP: Can't contact ldap server ". $params{'server'};
 
-  $ldap->bind($params{'binddn'}, 
+  $ldap->bind($params{'binddn'},
               password => $params{'passdn'} );
   return($ldap);
 }
@@ -58,8 +58,8 @@ sub connect_ldap {
 
 sub exist_entry {
   my ($ldap, $base, $filter) = @_;
-  
-  my $mesg = $ldap->search (    
+
+  my $mesg = $ldap->search (
                        base   => $base,
 	                   scope  => $config{'scope'},
 	                   filter => "$filter"
@@ -77,7 +77,7 @@ sub read_entry {
                               scope => $config{'scope'},
                               filter => "$filter"
                              );
-  my %info;	
+  my %info;
   $mesg->code && die $mesg->error;
   foreach my $entry ($mesg->all_entries) {
     foreach my $attr (@attributes) {
@@ -96,7 +96,7 @@ sub read_array_entry {
                               scope => $config{'scope'},
                               filter => "$filter"
                              );
-  my %info;	
+  my %info;
   $mesg->code && die $mesg->error;
   foreach my $entry ($mesg->all_entries) {
     foreach my $attr (@attributes) {
@@ -109,7 +109,7 @@ sub read_array_entry {
 
 
 sub del_entry {
-  
+
   my ($ldap, $dn) = @_;
 
   my $modify = $ldap->delete ($dn);
@@ -121,9 +121,9 @@ sub add_attr {
 
   my ($ldap, $dn, @adds) = @_;
   my $modify = $ldap->modify (dn => $dn,
-                              changes => [ 
+                              changes => [
 	                                   add => [ @adds ]
-                                         ]      
+                                         ]
                              );
   $modify->code && warn "failed to modify entry: ", $modify->error ;
 }
@@ -139,7 +139,7 @@ sub modify_attr {
 
 
 sub del_attr {
-    
+
   my ($ldap, $dn, @dels) = @_;
   my $modify = $ldap->modify (dn => $dn,
                                     changes => [
@@ -151,7 +151,7 @@ sub del_attr {
 
 sub get_users_list {
   my ($ldap, $base) = @_;
-    
+
   my @members = ();
   my $uid;
   my $mesg = $ldap->search ( # perform a search
@@ -160,7 +160,7 @@ sub get_users_list {
                              attrs => ['uid']
                            );
   $mesg->code && die $mesg->error;
-   
+
   foreach my $entry ($mesg->all_entries) {
     foreach my $value ($entry->get_value("uid")) {
       push @members,$value;
@@ -191,7 +191,7 @@ sub posixgroup_add_user {
     my $dn = "cn=$group,$base";
     push (@adds, 'memberUid' =>  $user);
     add_attr($ldap, $dn, @adds);
-  }	    
+  }
   return 1;
 }
 
@@ -258,16 +258,16 @@ sub get_posixgroup_members {
 }
 
 sub add_user {
-    
+
   my ($ldap, $user, $usersdn, %attr) = @_;
 
   my $dn = "uid=$user,$usersdn";
-  print $dn."\n" if $options{'verbose'};    
+  print $dn."\n" if $options{'verbose'};
   my $add = $ldap->add (dn => $dn,
                         attr => [
                                       'objectclass' => ['top','person','organizationalPerson','inetOrgPerson',
 					                 'posixAccount','shadowAccount' ],
-                                      'uid'   => $user,				 
+                                      'uid'   => $user,
                                       'cn'   => $attr{'cn'},
                                       'sn'   => $attr{'sn'},
                                       'givenName' => $attr{'givenName'},
@@ -287,13 +287,13 @@ sub add_user {
                                       'shadowFlag' => 0
                                      ]
                             );
-    
+
   $add->code && warn "failed to add entry: ", $add->error ;
 }
 
 sub get_aliases_list {
   my ($ldap, $base) = @_;
-    
+
   my @aliases = ();
   my $mesg = $ldap->search ( # perform a search
                              base   => $base,
@@ -301,7 +301,7 @@ sub get_aliases_list {
                              attrs => ['cn']
                            );
   $mesg->code && die $mesg->error;
-   
+
   foreach my $entry ($mesg->all_entries) {
     foreach my $value ($entry->get_value("cn")) {
       push @aliases,$value;
@@ -312,7 +312,7 @@ sub get_aliases_list {
 
 sub get_groups_list {
   my ($ldap, $base) = @_;
-    
+
   my @groups = ();
   my $mesg = $ldap->search ( # perform a search
                              base   => $base,
@@ -320,7 +320,7 @@ sub get_groups_list {
                              attrs => ['cn']
                            );
   $mesg->code && die $mesg->error;
-   
+
   foreach my $entry ($mesg->all_entries) {
     foreach my $value ($entry->get_value("cn")) {
       push @groups,$value;
@@ -332,7 +332,7 @@ sub get_groups_list {
 
 sub get_posixgroups_list {
   my ($ldap, $base) = @_;
-    
+
   my @groups = ();
   my $mesg = $ldap->search ( # perform a search
                              base   => $base,
@@ -340,7 +340,7 @@ sub get_posixgroups_list {
                              attrs => ['cn']
                            );
   $mesg->code && die $mesg->error;
-   
+
   foreach my $entry ($mesg->all_entries) {
     foreach my $value ($entry->get_value("cn")) {
       push @groups,$value;
@@ -351,7 +351,7 @@ sub get_posixgroups_list {
 
 
 sub add_alias {
-    
+
   my ($ldap, $aliasesdn, %attr) = @_;
 
   my $dn = "cn=".$attr{'cn'}.",$aliasesdn";
@@ -370,7 +370,7 @@ sub add_alias {
 
 
 sub add_group {
-    
+
   my ($ldap, $groupsdn, %attr) = @_;
 
   my $dn = "cn=".$attr{'cn'}.",$groupsdn";
@@ -387,9 +387,9 @@ sub add_group {
 
 sub get_dn {
   my ($ldap, $base, $filter) = @_;
- 
+
   my $dn;
-  my $mesg = $ldap->search (    
+  my $mesg = $ldap->search (
                            base   => $base,
 	                   scope  => $config{'scope'},
 	                   filter => "$filter"
@@ -407,7 +407,7 @@ sub get_dn {
 
 sub get_dn_list {
   my ($ldap, $base, $filter) = @_;
-    
+
   my @list = ();
   my $mesg = $ldap->search ( # perform a search
                              base   => $base,
@@ -415,7 +415,7 @@ sub get_dn_list {
                              filter => "$filter",
                            );
   $mesg->code && die $mesg->error;
-   
+
   foreach my $entry ($mesg->all_entries) {
     foreach my $value ($entry->dn) {
       push @list,$value;
@@ -424,5 +424,22 @@ sub get_dn_list {
   return @list;
 }
 
-1;
+sub get_ldap_config {
+    my %assoc =  (
 
+        'server' => $cfg->val('ldap','server'),
+        'version' => $cfg->val('ldap','version'),
+        'port' => $cfg->val('ldap','port'),
+        'binddn' => $cfg->val('ldap','binddn'),
+        'passdn' => $cfg->val('ldap','passdn'),
+        'basedn' => $cfg->val('ldap','basedn'),
+        'usersdn' => $cfg->val('ldap','usersdn'),
+        'groupsdn' => $cfg->val('ldap','groupsdn')
+
+
+    );
+
+    return %assoc;
+
+}
+1;
