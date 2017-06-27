@@ -246,7 +246,6 @@ foreach my $data (@$db_groups) {
 
 
 # Récupération LDAP groups
-my $ldap_config;
 @ldap_groups_name = sort(get_posixgroups_list($ldap,$ldap_config{'groupsdn'}));
 
 print "#LDAP Groups#\n";
@@ -267,6 +266,7 @@ $lc = List::Compare->new(\@db_groups_name, \@ldap_groups_name);
 
 # Groupes à ajouter dans la base LDAP
 @adds = sort($lc->get_Lonly);
+my $group_infos;
 foreach my $g (@adds) {
 
    #scalar ?
