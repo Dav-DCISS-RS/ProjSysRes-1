@@ -23,7 +23,7 @@ sub init_config {
   $$ref_config{'ldap'}{'version'} = $cfg->val('ldap','version');
   $$ref_config{'ldap'}{'port'}    = $cfg->val('ldap','port');
   $$ref_config{'ldap'}{'binddn'}  = $cfg->val('ldap','binddn');
-  $$ref_config{'ldap'}{'passdn'}  = $cfg->val('ldap',$passdn);
+  $$ref_config{'ldap'}{'passdn'}  = $cfg->val('ldap','passdn');
 
   $$ref_config{'db'}{'database'}  = $cfg->val('db','database');
   $$ref_config{'db'}{'server'}    = $cfg->val('db','server');
@@ -92,7 +92,7 @@ my %assoc =  (
     'version' => $cfg->val('ldap','version'),
     'port' => $cfg->val('ldap','port'),
     'binddn' => $cfg->val('ldap','binddn'),
-    'passdn' => $cfg->val('ldap','passdn'),
+    $$ref_config{'passdn'} => $cfg->val('ldap','passdn'),
     'basedn' => $cfg->val('ldap','basedn'),
     'usersdn' => $cfg->val('ldap','usersdn'),
     'groupsdn' => $cfg->val('ldap','groupsdn')
