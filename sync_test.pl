@@ -236,6 +236,9 @@ my (@db_group_users_login,@ldap_group_users_login);
 
 # recuperation des groupes de la BD
 # my $db_groups = db_lib::getGroups();
+my $sql = $db->prepare('SELECT * FROM groups ORDER BY group_id');
+$sql->execute();
+my $db_groups = $sql->fetchall_arrayref;
 
 foreach my $data (@$db_groups) {
     push(@db_groups_name,$data->[1]);
