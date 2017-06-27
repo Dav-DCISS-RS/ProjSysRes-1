@@ -136,7 +136,7 @@ foreach my $i (@LDAPusers){
 print"\n########Synchronisation########\n";
 
 
-my $user;
+$user="vide";
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
 
 
