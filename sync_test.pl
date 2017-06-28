@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 use Config::IniFiles;
 use ldap_lib;
 use List::Compare;
