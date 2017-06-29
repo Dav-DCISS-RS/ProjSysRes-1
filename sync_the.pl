@@ -179,7 +179,7 @@ warn Dumper($lc);
 
 # Modif dans l'annuaire LDAP
 my $modif_type="";
-@mods = sort(!($lc->get_Ronly));
+@mods = sort(!($lc->get_Ronly)); #algo: pour tous ceux qui ne sont pas que ds LDAP -> modif
 if (scalar(@mods) >0) {
 	foreach my $u (@mods) {
   	  $modif_type="";
@@ -190,7 +190,7 @@ if (scalar(@mods) >0) {
         	  "(uid=".$u.")",
 	          ('mail','shadowExpire','userPassword')
    		 );
-	    if($user->{courriel} ne $info{'mail'}) {
+	    if($user->{courriel} ne $info{'mail'}) {  #ne operateur entre string "not equal"
        		 modify_attr($ldap,$dn,'mail'=>$user->{courriel});
 	         $modif_type="mail";
    	    }
@@ -207,7 +207,7 @@ if (scalar(@mods) >0) {
             }
 	}
     }
-else {
+else {  # pour tous ceux qui ne sont que dans LDAP -> suppression (optimisation de l'algo)
 	foreach my $v (!@mods) {
     		$dn = sprintf("uid=%s,%s",$v,$cfg->val('ldap','usersdn'));
 		ldap_lib::del_entry($ldap,$dn);
