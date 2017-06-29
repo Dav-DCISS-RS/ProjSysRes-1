@@ -64,7 +64,7 @@ $ldap = connect_ldap(\%ldap_config);
 
 # Declaration variables globales
 my ($query,$sth,$res,$row,$user,$groupname,%expire);
-my ($lc,$identifiant);
+my ($lc,$gp,$identifiant);
 my (@adds,@mods,@dels);
 my (@SIusers,@LDAPusers);
 my (@SIgroups,@LDAPgroups);
@@ -221,7 +221,26 @@ print "\n\n";
 #------------------------------------------------------------------------
 #                          GROUPES
 #------------------------------------------------------------------------
+#1/afficher la liste des membres d’un groupe
+#2/modifier les membres d’un groupe (ajouter un membre / supprimer un membre)
+#3/supprimer un groupe (à condition qu’il ne contienne plus aucun membre et qu’il ne s’agisse pas du
+#groupe primaire d’un utilisateur)
 
+$sth = $dbh->prepare($query);
+$res = $sth->execute;
+
+ while ($row = $sth->fetchrow_hashref) {
+            my $groupe = $row->{id_groupe};
+            push(@SIgroups,$row->{id_groupe});
+}
+
+print "\n";
+print("Groupes dans SI\n");
+warn Dumper(@SIgroups);
+print "\n";
+
+print("Groupes LDAP\n");
+@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
 
 
 #-----------------------------------------------------------------------
