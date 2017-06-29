@@ -53,29 +53,19 @@ my $today = strftime "%d"."/"."%m"."/"."%Y", localtime;
 # On peut utiliser la var today pour voir expiration de l'utilisateur
 print "Date du jour : $today\n";
 
-<<<<<<< HEAD
-=======
-print "\n";
-print "Utilisateurs BD \n";
->>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 # recuperation des utilisateurs de la BD si
 # On peut rajouter les queries dans le fichier config
 # Ici le get_users affiche les utilisateurs
 print "\n";
 print "Utilisateurs BD \n";
 $query = $cfg->val('queries', 'get_users');
-<<<<<<< HEAD
-print "Requête SQL : \n";
-print $query."\n" ; # if $options{'debug'};
-=======
 #print $query."\n" ; # if $options{'debug'};
->>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
-# Je suppose que le code ci-dessous effectue la requête ?
+# Je suppose que le code ci-dessous effectue la requÃªte ?
 $sth = $dbh->prepare($query);
 $res = $sth->execute;
 while ($row = $sth->fetchrow_hashref) {
    $user = $row->{identifiant};
-   # push c'est ajouter à une liste en php c'est sûrement pareil en Perl
+   # push c'est ajouter Ã  une liste en php c'est sÃ»rement pareil en Perl
    push(@SIusers,$row->{identifiant});
    printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom}, $row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
 }
@@ -93,22 +83,18 @@ foreach my $i (@LDAPusers){
 
 # Comparaison des deux listes d'utilisateurs (BDD et LDAP)
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
-# On stocke les différences (utilisateurs présents dans ldap uniquement) dans une var
+# On stocke les diffÃ©rences (utilisateurs prÃ©sents dans ldap uniquement) dans une var
 @dels = sort($lc->get_Ronly);
-# Seulement s'il y a utilisateurs on exécute le code suivant
+# Seulement s'il y a utilisateurs on exÃ©cute le code suivant
 if (scalar(@dels) > 0) {
-  print "Ceci s'affiche s'il y a des utilisateurs à supprimer";
+  print "Ceci s'affiche s'il y a des utilisateurs Ã  supprimer";
   foreach my $u (@dels) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
     # le supprimer dans la base LDAP
-<<<<<<< HEAD
-    ldap_lib::del_entry($ldap,$dn);
-=======
     @LDAPusers = del_attr($ldap, $cfg->val('ldap','usersdn','@dels'));
->>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 
-print "Utilisateurs après modif :\n";
+print "Utilisateurs aprÃ¨s modif :\n";
 
 foreach my $i (@LDAPusers){
 	printf $i;
@@ -122,51 +108,19 @@ foreach my $i (@LDAPusers){
    # print("Fin test");
   }
 }
-# On vérifie la présence d'utilisateurs dans BDD mais pas LDAP (création)
+# On vÃ©rifie la prÃ©sence d'utilisateurs dans BDD mais pas LDAP (crÃ©ation)
 #add user
 @adds = sort($lc->get_Lonly);
 if (scalar(@adds) > 0) {
-<<<<<<< HEAD
-  print "Ceci s'affiche s'il y a des utilisateurs à créer";
-  foreach my $u (@adds) {
-    print "Ajout de : \n";
-    print $u;
-    my $user;
-    no warnings; # Pour éviter les messages inssuportables de concatenation
-    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    printf("Création %s\n", $dn);
-    ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),
-        (
-        'cn'=> $user->{prenom}." ".$user->{nom},
-        'sn'=>$user->{nom},
-        'givenName'=>$user->{prenom},
-        'mail'=>$user->{courriel},
-        'uidNumber'=>$user->{id_utilisateur},
-        'gidNumber'=>$user->{id_groupe},
-        'homeDirectory'=>"/home/".$user->{identifiant},
-        'loginShell'=>"/bin/bash",
-        'userPassword'=>gen_password($user->{mot_passe}),
-        'shadowExpire'=>date2shadow($user->{date_expiration})
-
-        ));
-
-    printf("Ajout de %s\n",$dn); #if $options{'verbose'};
-
-    }
-}
-print "\n";
-print ("utilisateurs dans ldap apr�s traitement :\n");
-=======
   foreach my $u (@adds) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    printf("Création %s\n", $dn); 
+    printf("CrÃ©ation %s\n", $dn); 
     @LDAPusers = add_attr($ldap, $cfg->val('ldap','usersdn','@adds')); 
    
     }
 }
 print "\n";
-print ("utilisateurs dans ldap apr�s traitement :\n");
->>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
+print ("utilisateurs dans ldap aprÃs traitement :\n");
 foreach my $i (@LDAPusers){
 	printf $i;
 	printf "\n";
