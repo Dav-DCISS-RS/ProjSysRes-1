@@ -122,27 +122,32 @@ warn Dumper($lc);
 #                  Ajout Utilisateur
 #-------------------------------------------------------------------------------------------
 
-#foreach my $si (@SIusers) {
-#	foreach $ld (@LDAPusers) {
-#		while  (@SIusers,$row->{identifiant} != @LDAPusers) {
-			
-#			ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),%attrib;
-
-#}
-
 @adds = sort($lc->get_unique);
 
 #foreach my $u (@adds) {
  foreach $identifiant (@adds) {
- 	
-	   if(!ldap_lib::exist_entry($ldap,$cfg->val('ldap','usersdn'),"(uid=$identifiant)")) {
-     	       printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom}, $row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
-	       $attrib{'cn'} = $row->{prenom}." ".$row->{nom};
-    	       $attrib{'sn'} = $row->{nom};
-	       ldap_lib::add_user($ldap,$user->{identifiant},$cfg->val('ldap','usersdn'),%attrib);
-      
-   }
-}
+    if(!ldap_lib::exist_entry($ldap,$cfg->val('ldap','usersdn'),"(uid=$identifiant)")) {
+        $query = $cfg->val('queries', 'get_users');
+        print "Requête SQL : \n";
+        print $query."\n" ; # if $options{'debug'};
+        $sth = $dbh->prepare($query);
+        $res = $sth->execute;
+        while ($row = $sth->fetchrow_hashref) {
+            my $identifiant = $row->{identifiant};
+            push(@SIusers,$row->{identifiant});
+            printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom},$row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
+            $attrib{'cn'} = $row->{prenom}." ".$row->{nom};
+            $attrib{'sn'} = $row->{nom};
+            $attrib{'givenName'} = $row->{prenom};
+            $attrib{'mail'} = $row->{courriel};
+            $attrib{'uidNumber'} = $row->{id_utilisateur};
+            $attrib{'gidNumber'} = $row->{id_groupe};
+            $attrib{'homeDirectory'} = "/home/".$row->{identifiant};
+            $attrib{'loginShell'} = "/bin/bash";
+            $attrib{'userPassword'} = gen_password($row->{mot_passe});
+            $attrib{'shadowExpire'} = date2shadow($row->{date_expiration});
+
+            ldap_lib::add_user($ldap,$row->{identifiant},$cfg->val('ldap','usersdn'),%attrib);
 
 print "Apres ajout dans LDAP : ";
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
@@ -195,107 +200,11 @@ foreach my $u (@mods) {
 print "\n\n";
 
 
-#################
-# GROUPES
-#################
-my (@db_groups_name,@ldap_groups_name);
-my (@db_group_users_login,@ldap_group_users_login);
-
-# Récupération des groupes de la BD
-my $sql = $dbh->prepare('SELECT * FROM groupes ORDER BY id_groupe');
-$sql->execute();
-my $db_groups = $sql->fetchall_arrayref;
-foreach my $data (@$db_groups) {
-    push(@db_groups_name,$data->[1]);
-}
+#------------------------------------------------------------------------
+#                          GROUPES
+#------------------------------------------------------------------------
 
 
-# Récupération groupes LDAP
-@ldap_groups_name = sort(get_posixgroups_list($ldap,$ldap_config{'groupsdn'}));
-print "Groupes LDAP\n";
-warn Dumper(@ldap_groups_name);
-
-print "Groupes DB\n";
-warn Dumper(@db_groups_name);
-
-$lc = List::Compare->new(\@db_groups_name, \@ldap_groups_name);
-
-# Groupes à ajouter dans la base LDAP
-@adds = sort($lc->get_Lonly);
-my $group_infos;
-foreach my $g (@adds) {
-   add_posixgroup(
-        $ldap,
-        $cfg->val('ldap','groupsdn'),
-        (
-            'cn'=>$group_infos->{nom},
-            'gidNumber'=>$group_infos->{id_groupe},
-            'description'=>$group_infos->{description}
-        )
-    );
-
-    printf "Adding the group $g in LDAP base.";
-}
-
-# Groupes à supprimer de la base LDAP
-@dels = sort($lc->get_Ronly);
-foreach my $g (@dels) {
-    $dn = sprintf("cn=%s,%s",$g,$cfg->val('ldap','groupsdn'));
-    ldap_lib::del_entry($ldap,$dn);
-    printf "Suppression du groupe $g de LDAP\n";
-}
-
-
-
-# Ajout d'un membre dans groupe
-my @db_group_users;
-
-# Parcours de tous les groupes
-foreach my $data (@$db_groups) {
-    @db_group_users_login = ();
-    @ldap_group_users_login = ();
-    # Récupération des utilisateurs du groupe en question
-    my($group_id) = @_;
-    my $sql = $dbh->prepare('SELECT u.* FROM group_members gm INNER JOIN groups g ON g.group_id=gm.group_id INNER JOIN users u ON gm.user_id = u.user_id  WHERE g.group_id=? ');
-    $sql->execute($group_id);
-    my $db_group_users = $sql->fetchall_arrayref;;
-
-    # On place dans un tableau les identifiants des utilisateurs inscrits dans le groupe
-    foreach my $i (@$db_group_users) {
-        push(@db_group_users_login,$i->[1]);
-    }
-
-    # On récupère les identifiants des utilisateurs du groupe LDAP
-    @ldap_group_users_login=ldap_lib::get_posixgroup_members($ldap,$ldap_config{'groupsdn'},$data->[1]);
-
-    $lc = List::Compare->new(\@db_group_users_login, \@ldap_group_users_login);
-
-    # On l'ajoute sur LDAP
-    @adds = sort($lc->get_Lonly);
-    foreach my $u (@adds) {
-        posixgroup_add_user(
-            $ldap,
-            $ldap_config{'groupsdn'},
-            $data->[1], # Nom groupe
-            $u
-        );
-        printf "Ajout de l'utilisateur $u dans le groupe $data->[1] dans la base LDAP.\n";
-    }
-
-    # On supprime de LDAP
-    @dels = sort($lc->get_Ronly);
-    foreach my $u (@dels) {
-        $dn = sprintf("cn=%s,%s",$data->[1],$cfg->val('ldap','groupsdn'));
-
-        ldap_lib::del_attr(
-            $ldap,
-            $dn,
-            ('memberUid'=>$u)
-        );
-
-        printf "Suppression de l'utilisateur $u du groupe $data->[1] dans LDAP\n";
-    }
-}
 
 #-----------------------------------------------------------------------
 # FONCTIONS
