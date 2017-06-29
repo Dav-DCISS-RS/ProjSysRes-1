@@ -124,8 +124,9 @@ warn Dumper($lc);
 
 @adds = sort($lc->get_unique);
 
-#foreach my $u (@adds) {
  foreach $identifiant (@adds) {
+    $dn = sprintf("uid=%s,%s",$identifiant,$cfg->val('ldap','usersdn'));
+	
     if(!ldap_lib::exist_entry($ldap,$cfg->val('ldap','usersdn'),"(uid=$identifiant)")) {
         $query = $cfg->val('queries', 'get_users');
         print "Requête SQL : \n";
@@ -148,54 +149,71 @@ warn Dumper($lc);
             $attrib{'shadowExpire'} = date2shadow($row->{date_expiration});
 
             ldap_lib::add_user($ldap,$row->{identifiant},$cfg->val('ldap','usersdn'),%attrib);
-
-print "Apres ajout dans LDAP : ";
-@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
-warn Dumper(@LDAPusers);
+	    printf("Ajout de %s\n",$dn);    
+	}
+}  
+		
+			  
+#print "Apres ajout dans LDAP : ";
+#@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
+#warn Dumper(@LDAPusers);
 
 #---------------------------------------------------------------------------------------------
-#                       Suppression d'un Utilisateur
+#                       Suppression et modification d'un Utilisateur
 #---------------------------------------------------------------------------------------------
 
 
 
 # Utilisateurs à supprimer de l'annuaire LDAP
-@dels = sort($lc->get_Ronly);
-foreach my $u (@dels) {
-    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    ldap_lib::del_entry($ldap,$dn);
-    printf("Suppression de %s\n",$dn); #if $options{'verbose'};
-}
+#@dels = sort($lc->get_complement);
+
+#if (scalar(@dels) >0) {
+#	print " Suppression dans LDAP :\n";
+
+#	}
+
+
+#warn Dumper(@LDAPusers);
+
 
 
 # Modif dans l'annuaire LDAP
 my $modif_type="";
-@mods = sort($lc->get_intersection);
-foreach my $u (@mods) {
-    $modif_type="";
-    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-    my %info = read_entry(
-        $ldap,
-        $cfg->val('ldap','usersdn'),
-        "(uid=".$u.")",
-        ('mail','shadowExpire','userPassword')
-    );
-    if($user->{courriel} ne $info{'mail'}){
-        modify_attr($ldap,$dn,'mail'=>$user->{courriel});
-        $modif_type="mail";
+@mods = sort(!($lc->get_Ronly));
+if (scalar(@mods) >0) {
+	foreach my $u (@mods) {
+  	  $modif_type="";
+  	  $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
+   	  my %info = read_entry(
+                  $ldap,
+	          $cfg->val('ldap','usersdn'),
+        	  "(uid=".$u.")",
+	          ('mail','shadowExpire','userPassword')
+   		 );
+	    if($user->{courriel} ne $info{'mail'}) {
+       		 modify_attr($ldap,$dn,'mail'=>$user->{courriel});
+	         $modif_type="mail";
+   	    }
+   	    if(date2shadow($user->{date_expiration}) != $info{'shadowExpire'}) {
+       		 modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{date_expiration}));
+	         $modif_type="expire";
+   	    }
+   	    if(gen_password($user->{mot_passe}) ne $info{'userPassword'}) {
+	         modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{mot_passe}));
+         	 $modif_type="password";
+            }
+	    if($modif_type ne "") {
+       		 printf("Modification de %s [".$modif_type."]\n",$dn); #if $options{'verbose'};
+            }
+	}
     }
-    if(date2shadow($user->{date_expiration}) != $info{'shadowExpire'}){
-        modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{date_expiration}));
-        $modif_type="expire";
-    }
-    if(gen_password($user->{mot_passe}) ne $info{'userPassword'}){
-        modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{mot_passe}));
-        $modif_type="password";
-    }
-    if($modif_type ne ""){
-        printf("Modification de %s [".$modif_type."]\n",$dn); #if $options{'verbose'};
-    }
-}
+else {
+	foreach my $v (!@mods) {
+    		$dn = sprintf("uid=%s,%s",$v,$cfg->val('ldap','usersdn'));
+		ldap_lib::del_entry($ldap,$dn);
+		printf("Suppression de %s\n",$dn); #if $options{'verbose'};
+		}
+	}
 
 print "\n\n";
 
@@ -249,4 +267,3 @@ sub date2shadow {
 }
 
 print "\n\n";
-
