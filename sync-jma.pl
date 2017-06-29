@@ -53,14 +53,23 @@ my $today = strftime "%d"."/"."%m"."/"."%Y", localtime;
 # On peut utiliser la var today pour voir expiration de l'utilisateur
 print "Date du jour : $today\n";
 
+<<<<<<< HEAD
+=======
+print "\n";
+print "Utilisateurs BD \n";
+>>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 # recuperation des utilisateurs de la BD si
 # On peut rajouter les queries dans le fichier config
 # Ici le get_users affiche les utilisateurs
 print "\n";
 print "Utilisateurs BD \n";
 $query = $cfg->val('queries', 'get_users');
+<<<<<<< HEAD
 print "Requête SQL : \n";
 print $query."\n" ; # if $options{'debug'};
+=======
+#print $query."\n" ; # if $options{'debug'};
+>>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 # Je suppose que le code ci-dessous effectue la requête ?
 $sth = $dbh->prepare($query);
 $res = $sth->execute;
@@ -93,7 +102,11 @@ if (scalar(@dels) > 0) {
     $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
     printf("Suppression %s\n",$dn); #if $options{'verbose'};
     # le supprimer dans la base LDAP
+<<<<<<< HEAD
     ldap_lib::del_entry($ldap,$dn);
+=======
+    @LDAPusers = del_attr($ldap, $cfg->val('ldap','usersdn','@dels'));
+>>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 
 print "Utilisateurs après modif :\n";
 
@@ -113,6 +126,7 @@ foreach my $i (@LDAPusers){
 #add user
 @adds = sort($lc->get_Lonly);
 if (scalar(@adds) > 0) {
+<<<<<<< HEAD
   print "Ceci s'affiche s'il y a des utilisateurs à créer";
   foreach my $u (@adds) {
     print "Ajout de : \n";
@@ -142,6 +156,17 @@ if (scalar(@adds) > 0) {
 }
 print "\n";
 print ("utilisateurs dans ldap apr�s traitement :\n");
+=======
+  foreach my $u (@adds) {
+    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
+    printf("Création %s\n", $dn); 
+    @LDAPusers = add_attr($ldap, $cfg->val('ldap','usersdn','@adds')); 
+   
+    }
+}
+print "\n";
+print ("utilisateurs dans ldap apr�s traitement :\n");
+>>>>>>> aacaf631b6381ec8c23389bc6654a18c5669cf5e
 foreach my $i (@LDAPusers){
 	printf $i;
 	printf "\n";
