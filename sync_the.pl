@@ -18,8 +18,6 @@ GetOptions(\%options,
            "commit",
 	   "help|?");
 
-
-
 if ($options{'help'}) {
   print "Usage: $0 [--verbose --debug --commit|-c --help|?]\n";
   print " ";
@@ -64,79 +62,98 @@ $ldap = connect_ldap(\%ldap_config);
 
 # Declaration variables globales
 my ($query,$sth,$res,$row,$user,$groupname,%expire);
-my ($lc,$gp,$identifiant);
+my ($lc,$identifiant);
 my (@adds,@mods,@dels);
 my (@SIusers,@LDAPusers);
 my (@SIgroups,@LDAPgroups);
 my ($dn,%attrib);
 my $today = strftime "%d"."/"."%m"."/"."%Y", localtime;
 
-
 # On peut utiliser la var today pour voir expiration de l'utilisateur
+print "\n" . "-" x 80 . "\n";
+print "\nSynchronisation BD <-> LDAP\n";
 print "Date du jour : $today\n";
-
-
-
-# recuperation des utilisateurs de la BD si
-# On peut rajouter les queries dans le fichier config
-# Ici le get_users affiche les utilisateurs
-print "\n";
-print "Utilisateurs BD \n";
-$query = $cfg->val('queries', 'get_users');
-print "Requête SQL : \n";
-print $query."\n" ; # if $options{'debug'};
-
-$sth = $dbh->prepare($query);
-$res = $sth->execute;
-
- while ($row = $sth->fetchrow_hashref) {
-            my $identifiant = $row->{identifiant};
-            push(@SIusers,$row->{identifiant});
-}
+print "\n" . "-" x 80 . "\n\n";
 
 #----------------------------------------------------------------------------------------------
 #                    Recuperation de la liste des utilisateurs LDAP & SI
 #----------------------------------------------------------------------------------------------
 
-print "\n";
+# Requête 1
+$query = $cfg->val('queries', 'get_users');
+if ($options{'debug'}) {
+	print "1ere requête SQL : \n";
+	print $query."\n";
+}		
+$sth = $dbh->prepare($query);
+$res = $sth->execute;
+while ($row = $sth->fetchrow_hashref) {
+	my $identifiant = $row->{identifiant};
+	push(@SIusers,$row->{identifiant});
+}
 
+# Affichage du nombre d'utilisateurs dans SI, et de leur id en mode debug
+print("\nUtilisateur(s) dans la BD SI : " . scalar(@SIusers) . "\n");
+if ($options{'debug'}) {
+	warn Dumper(@SIusers);
+}
 
-print("Utilisateur SI\n");
-warn Dumper(@SIusers);
-
-print "\n";
-
-print("Utilisateur LDAP\n");
+# Affichage du nombre d'utilisateurs dans LDAP, et de leur id en mode debug
 @LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
-warn Dumper(@LDAPusers);
+print("\nUtilisateur(s) dans LDAP avant ajout : " . scalar(@LDAPusers) . "\n");
+if ($options{'debug'}) {
+	warn Dumper(@LDAPusers);
+}
 
 #---------------------------------------------------------------------------------------------
 
-
-print"\nSynchronisation\n";
+# Synchronisation des 2 listes d'utilisateurs
+# Affichage des différences en mode debug
+print"\nSynchronisation...\n";
 
 $lc = List::Compare->new(\@SIusers, \@LDAPusers);
-warn Dumper($lc);
+if ($options{'debug'}) {
+	warn Dumper($lc);
+}	
+print "\n";
 
 #-------------------------------------------------------------------------------------------
 #                  Ajout Utilisateur
 #-------------------------------------------------------------------------------------------
 
-@adds = sort($lc->get_unique);
+# On vérifie si l'entrée dans la BD existe dans l'annuaire LDAP
+# Si elle est absente, on ajoute l'utilisateur
 
- foreach $identifiant (@adds) {
-    $dn = sprintf("uid=%s,%s",$identifiant,$cfg->val('ldap','usersdn'));
-	
+# Pour chaque identifiant utilisateur à ajouter
+@adds = sort($lc->get_unique);
+# warn Dumper(@adds); # Dumper (@adds) générant une erreur 
+foreach $identifiant (@adds) {
+    # Si celui-ci n'est pas déjà présent dans l'annuaire
     if(!ldap_lib::exist_entry($ldap,$cfg->val('ldap','usersdn'),"(uid=$identifiant)")) {
-        $query = $cfg->val('queries', 'get_users');
-        print "Requête SQL : \n";
-        print $query."\n" ; # if $options{'debug'};
-        $sth = $dbh->prepare($query);
-        $res = $sth->execute;
-        while ($row = $sth->fetchrow_hashref) {
+        # On liste les utilisateurs
+	$query = $cfg->val('queries', 'get_users');
+	# En mode debug seulement, on affiche la requête
+	if ($options{'debug'}) {
+		print "Requête SQL : \n";
+		print $query."\n";
+	}		
+	# On l'exécute sur la BD
+	$sth = $dbh->prepare($query);
+	$res = $sth->execute;
+	if ($options{'debug'}) {
+	print $res;
+	}	
+	# Pour chaque ligne utilisateur récupérée
+	while ($row = $sth->fetchrow_hashref) {
+            # On prend son identifiant
             my $identifiant = $row->{identifiant};
+            print "Identifiant : \n";
+            warn Dumper($identifiant);
+            # Et on l'ajoute à la liste utilisateurs de la BD
             push(@SIusers,$row->{identifiant});
+            # On affiche les différents champs utilisateurs
             printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom},$row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
+            # On met les champs dans la table %attrib déclarée précédemment
             $attrib{'cn'} = $row->{prenom}." ".$row->{nom};
             $attrib{'sn'} = $row->{nom};
             $attrib{'givenName'} = $row->{prenom};
@@ -147,75 +164,109 @@ warn Dumper($lc);
             $attrib{'loginShell'} = "/bin/bash";
             $attrib{'userPassword'} = gen_password($row->{mot_passe});
             $attrib{'shadowExpire'} = date2shadow($row->{date_expiration});
+            if ($options{'debug'}) {
+            	warn Dumper(%attrib);
+            }
+            # En mode commit, on met à jour l'annuaire en ajoutant l'utilisateur
+            if ($options{'commit'}) {
+            	ldap_lib::add_user($ldap,$row->{identifiant},$cfg->val('ldap','usersdn'),%attrib);
+            }
+	}	
+    }
+}
 
-            ldap_lib::add_user($ldap,$row->{identifiant},$cfg->val('ldap','usersdn'),%attrib);
-	    printf("Ajout de %s\n",$dn);    
-	}
-}  
-		
-			  
-#print "Apres ajout dans LDAP : ";
-#@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
-#warn Dumper(@LDAPusers);
+@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
+print("Utilisateurs dans LDAP après ajout : " . scalar(@LDAPusers) . "\n");
+if ($options{'debug'}) {
+	warn Dumper(@LDAPusers);
+	print "\n";
+}
 
 #---------------------------------------------------------------------------------------------
 #                       Suppression et modification d'un Utilisateur
 #---------------------------------------------------------------------------------------------
 
-
-
-# Utilisateurs à supprimer de l'annuaire LDAP
-#@dels = sort($lc->get_complement);
-
-#if (scalar(@dels) >0) {
-#	print " Suppression dans LDAP :\n";
-
-#	}
-
-
-#warn Dumper(@LDAPusers);
-
-
-
-# Modif dans l'annuaire LDAP
+$lc = List::Compare->new(\@SIusers, \@LDAPusers);
 my $modif_type="";
+@dels = sort($lc->get_Ronly);
 @mods = sort(!($lc->get_Ronly)); #algo: pour tous ceux qui ne sont pas que ds LDAP -> modif
-if (scalar(@mods) >0) {
+
+#if (scalar(@dels) > 0) {
+#  foreach my $u (@dels) {
+#    $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
+#    if ($options{'commit'}) {
+#    	ldap_lib::del_entry($ldap,$dn);
+#    	printf("Suppression %s\n",$dn);
+#    }
+#  }
+#}
+
+# Modification des parametres utilisateurs dans l'annuaire LDAP
+
+if (scalar(@mods) > 0) {
+	print scalar(@mods) . " utilisateur(s) à modifier\n";
 	foreach my $u (@mods) {
+  	  # Parametres
   	  $modif_type="";
   	  $dn = sprintf("uid=%s,%s",$u,$cfg->val('ldap','usersdn'));
-   	  my %info = read_entry(
-                  $ldap,
-	          $cfg->val('ldap','usersdn'),
-        	  "(uid=".$u.")",
-	          ('mail','shadowExpire','userPassword')
-   		 );
-	    if($user->{courriel} ne $info{'mail'}) {  #ne operateur entre string "not equal"
-       		 modify_attr($ldap,$dn,'mail'=>$user->{courriel});
-	         $modif_type="mail";
-   	    }
-   	    if(date2shadow($user->{date_expiration}) != $info{'shadowExpire'}) {
-       		 modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($user->{date_expiration}));
-	         $modif_type="expire";
-   	    }
-   	    if(gen_password($user->{mot_passe}) ne $info{'userPassword'}) {
-	         modify_attr($ldap,$dn,'userPassword'=>gen_password($user->{mot_passe}));
-         	 $modif_type="password";
-            }
-	    if($modif_type ne "") {
-       		 printf("Modification de %s [".$modif_type."]\n",$dn); #if $options{'verbose'};
-            }
+   	  # Initialisation des éléments LDAP
+   	  my %info = read_entry($ldap,$cfg->val('ldap','usersdn'),"(uid=".$u.")",('mail','shadowExpire','userPassword'));
+   	  # Initialisation des éléments SI (requête)
+   	  $query = $cfg->val('queries', 'get_users');
+   	  $sth = $dbh->prepare($query);
+   	  $res = $sth->execute;
+   	  while ($row = $sth->fetchrow_hashref) {
+   	  	push(@SIusers,$row->{identifiant});
+   	  	printf "%s %s %s %s %s\n", $row->{identifiant}, $row->{nom},$row->{prenom}, $row->{courriel}, $row->{id_utilisateur};
+   	  		
+   	  	if($row->{courriel} ne $info{'mail'}) {  # ne operateur entre string "not equal"
+       			# Traces pour voir si les champs s'initialisent correctement
+       			if ($options{'debug'}) {
+       			print "\nMail SI avant synchro : " . $row->{courriel};
+	        	print "\nMail LDAP avant synchro : " . $info{'mail'};
+	        	}
+	        	# Mise à jour du champ (mode commit)
+	        	if ($options{'commit'}) {
+       			modify_attr($ldap,$dn,'mail'=>$row->{courriel});
+	        	$modif_type="mail";
+	        	}
+   	  	}
+   	  	if(date2shadow($row->{date_expiration}) != $info{'shadowExpire'}) {
+   	  		if ($options{'debug'}) {
+   	  		print "\nDate exp SI avant synchro : " . $row->{date_expiration};
+	        	print "\nDate exp LDAP avant synchro : " . $info{'shadowExpire'};
+	        	}
+	        	if ($options{'debug'}) {
+       			modify_attr($ldap,$dn,'shadowExpire'=>date2shadow($row->{date_expiration}));
+	        	$modif_type="expire";
+	        	}
+   	    	}
+		if(gen_password($row->{mot_passe}) ne $info{'userPassword'}) {
+			if ($options{'debug'}) {
+			print "\nMdP SI avant synchro : " . $row->{mot_passe};
+	        	print "\nMdP LDAP avant synchro : " . $info{'userPassword'};
+	        	}
+	        	if ($options{'debug'}) {
+	        	modify_attr($ldap,$dn,'userPassword'=>gen_password($row->{mot_passe}));
+         		$modif_type="password";
+         		}
+           	}
+	    	if($modif_type ne "") {
+       			printf("Modification de %s [".$modif_type."]\n",$dn . "\n"); #if $options{'verbose'};
+            	}
 	}
     }
-else {  # pour tous ceux qui ne sont que dans LDAP -> suppression (optimisation de l'algo)
-	foreach my $v (!@mods) {
-    		$dn = sprintf("uid=%s,%s",$v,$cfg->val('ldap','usersdn'));
-		ldap_lib::del_entry($ldap,$dn);
-		printf("Suppression de %s\n",$dn); #if $options{'verbose'};
-		}
+}
+    
+# pour tous ceux qui ne sont que dans LDAP -> suppression (optimisation de l'algo) 
+### else foreach my $v (!@mods) ne semble pas fonctionner, pour l'instant retour à foreach my $v (@dels) ###
+foreach my $v (@dels) {
+	$dn = sprintf("uid=%s,%s",$v,$cfg->val('ldap','usersdn'));
+	if ($options{'commit'}) {
+	  ldap_lib::del_entry($ldap,$dn);
 	}
-
-print "\n\n";
+	  printf("Suppression de %s \n",$dn . "\n"); #if $options{'verbose'};
+	}
 
 
 #------------------------------------------------------------------------
@@ -226,22 +277,112 @@ print "\n\n";
 #3/supprimer un groupe (à condition qu’il ne contienne plus aucun membre et qu’il ne s’agisse pas du
 #groupe primaire d’un utilisateur)
 
+# Variables
+my (@db_groups_name,@ldap_groups_name);
+my (@db_group_users_login,@ldap_group_users_login);
+
+# Liste des groupes dans SI
 $sth = $dbh->prepare($query);
 $res = $sth->execute;
-
- while ($row = $sth->fetchrow_hashref) {
+while ($row = $sth->fetchrow_hashref) {
             my $groupe = $row->{id_groupe};
             push(@SIgroups,$row->{id_groupe});
 }
 
-print "\n";
-print("Groupes dans SI\n");
-warn Dumper(@SIgroups);
-print "\n";
+print("\nGroupe(s) dans la BD SI : " . scalar(@SIgroups) . "\n");
+if ($options{'debug'}) {
+	warn Dumper(@SIgroups);
+}
 
-print("Groupes LDAP\n");
-@LDAPusers = sort(get_users_list($ldap,$cfg->val('ldap','usersdn')));
+# Liste des groupes dans LDAP
+# @LDAPgroups = sort(get_groups_list($ldap,$cfg->val('ldap','groupsdn')));
+@LDAPgroups = sort(get_posixgroups_list($ldap,$ldap_config{'ldap','groupsdn'}));
+print("\nGroupe(s) dans LDAP avant ajout : " . scalar(@LDAPgroups) . "\n");
+if ($options{'debug'}) {
+	warn Dumper(@LDAPgroups);
+}
 
+# Comparaison des groupes BD et LDAP
+$lc = List::Compare->new(\@SIgroups, \@LDAPgroups);
+
+# Groupes à ajouter dans la base LDAP
+@adds = sort($lc->get_Lonly);
+my $group_infos;
+foreach my $g (@adds) {
+   add_posixgroup(
+        $ldap,
+        $cfg->val('ldap','groupsdn'),
+        (
+            'cn'=>$group_infos->{nom},
+            'gidNumber'=>$group_infos->{id_groupe},
+            'description'=>$group_infos->{description}
+        )
+    );
+
+    printf "Adding the group $g in LDAP base.";
+}
+
+# Groupes à supprimer de la base LDAP
+@dels = sort($lc->get_Ronly);
+foreach my $g (@dels) {
+    $dn = sprintf("cn=%s,%s",$g,$cfg->val('ldap','groupsdn'));
+    ldap_lib::del_entry($ldap,$dn);
+    printf "Suppression du groupe $g de LDAP\n";
+}
+
+# Ajout d'un membre dans le groupe
+my @db_group_users;
+
+# Parcours de tous les groupes
+foreach my $data (@SIgroups) {
+    @db_group_users_login = ();
+    @ldap_group_users_login = ();
+    
+    # Récupération des utilisateurs du groupe en question
+    my($group_id) = @_;
+    my $sql = $dbh->prepare('SELECT u.* FROM group_members gm INNER JOIN groups g ON g.group_id=gm.group_id INNER JOIN users u ON gm.user_id = u.user_id WHERE g.group_id = ?');
+    $sql->execute($group_id);
+    my $db_group_users = $sql->fetchall_arrayref;; # arrayref à remplacer par fetchrow_hashref ?
+
+    # On place dans un tableau les identifiants des utilisateurs inscrits dans le groupe
+    foreach my $i (@$db_group_users) {
+        push(@db_group_users_login,$i->[1]);
+    }
+
+    # On récupère les identifiants des utilisateurs du groupe LDAP
+    @ldap_group_users_login=ldap_lib::get_posixgroup_members($ldap,$ldap_config{'groupsdn'},$data->[1]);
+
+    # On compare les utilisateurs des groupes BD et LDAP
+    $lc = List::Compare->new(\@db_group_users_login, \@ldap_group_users_login);
+
+    # On ajoute les utilisateurs sur LDAP
+    @adds = sort($lc->get_Lonly);
+    foreach my $u (@adds) {
+        posixgroup_add_user(
+            $ldap,
+            $ldap_config{'groupsdn'},
+            $data->[1], # Nom groupe
+            $u
+        );
+        printf "Ajout de l'utilisateur $u dans le groupe $data->[1] dans la base LDAP.\n";
+    }
+
+    # On supprime les utilisateurs de LDAP
+    @dels = sort($lc->get_Ronly);
+    foreach my $u (@dels) {
+        $dn = sprintf("cn=%s,%s",$data->[1],$cfg->val('ldap','groupsdn'));
+
+        ldap_lib::del_attr(
+            $ldap,
+            $dn,
+            ('memberUid'=>$u)
+        );
+
+        printf "Suppression de l'utilisateur $u du groupe $data->[1] dans LDAP\n";
+    }
+}
+
+print "\n\n";
 
 #-----------------------------------------------------------------------
 # FONCTIONS
